@@ -5,10 +5,10 @@ module Adapter
 
     attr_accessor :agent, :page_count, :url
     
-    def initialize
+    def initialize(url = "http://stackoverflow.com/users?tab=reputation&filter=all&page=", page_count = 18441)
       @agent = Mechanize.new {|a| a.user_agent_alias = 'Mac Safari' }
-      @page_count = 18441
-      @url = "http://stackoverflow.com/users?tab=reputation&filter=all&page="
+      @page_count = page_count
+      @url = url
     end
 
     def crawl
