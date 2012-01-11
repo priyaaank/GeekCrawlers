@@ -3,49 +3,35 @@ require 'mechanize'
 module Adapter
   class GithubCrawler
     
-    attr_accessor :language_listing_url, :agent, :languages, :search_url
+    attr_accessor :agent, :search_url
 
     def initialize
-      @language_listing_url = "http://github.com/languages"
       @agent = Mechanize.new { |a| a.verify_mode = OpenSSL::SSL::VERIFY_NONE; a.user_agent_alias = "Mac Safari" }
-      @languages = []
-      @search_url = "https://github.com/search?langOverride=&language=&q=language%3A##LANGUAGE_NAME##&repo=&type=Users&x=19&y=21&start_value="
+      @search_url = "https://github.com/search?type=Users&language=&q=language%3Aa&repo=&langOverride=&x=0&y=0&start_value="
     end
 
     def crawl
-      populate_language_list
-      @languages.each do |language|
-        crawl_users_who_code_in language
+      (1..page_count_for_user_paginated_listing).each do |page_number|
+        current_page = @agent.get(url_for(page_number))
+        extract_info_from current_page
       end
     end
 
     private
 
-    def crawl_users_who_code_in language
-      puts "#{language} : #{page_count_for(language)}"
-    end
-
-    def populate_language_list
-      @languages = language_page.search(".right ul li a").collect do |language_url|
-        matched_language_name_from language_url
+    def extract_info_from page
+      page.search("vcard").each do |dom_element|
+        #extract info here
       end
     end
 
-    def matched_language_name_from language_url
-      (language_url.to_s.match(/<a href.*>(.*)<\/a>/) || [])[1]
-    end
-
-    def language_page
-      @agent.get(@language_listing_url)
-    end
-
-    def url_for language, page_number
-      (@search_url.gsub("##LANGUAGE_NAME##",language) + page_number.to_s)
-    end
-
-    def page_count_for language
-      node = @agent.get(url_for(language,1)).search(".pagination .pager_link:last-child").last 
+    def page_count_for_user_paginated_listing
+      node = @agent.get(url_for_page(@search_url,1)).search(".pagination .pager_link:last-child").last 
       (node.to_s.match(/<a href.*>(.*)<\/a>/)||[])[1]
+    end
+
+    def url_for_page url, page_number
+      (url+page_number.to_s)
     end
 
   end
